@@ -19,6 +19,10 @@ description: 关于我
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site
 
+# paginate: 10
+# paginate_file: index.html
+
+# gems: [jekyll-pagination]
 permalink: /:year:day:month/:title.html
 # Build settings
 markdown: kramdown
