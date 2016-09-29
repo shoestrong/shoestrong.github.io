@@ -4,7 +4,7 @@ title: “eval” is not evil
 tags: [javascript]
 ---
 <h1>{{ page.title }}</h1>
-<time>{{ site.time | date_to_long_string }}</time> 标签：{% for tag in page.tags %} <span> {{tag}} </span> {% endfor %}
+<p><span>标签：{% for tag in page.tags %} <span> {{tag}} </span> {% endfor %} </span><time>{{ site.time | date_to_long_string }}</time></p>
 <p>一般我们代码几乎不会使用到eval, 但凡需要使用到<code class="highlighter-rouge">eval</code>的地方，都会代而使用构造器Function生成函数实例的方式，因为<code class="highlighter-rouge">eval is evil</code>。<code class="highlighter-rouge">eval</code>可以在全局作域下执行代码，也可以在局部作用域（间接调用<code class="highlighter-rouge">eval</code>）下执行代码。而使用构造器Function生成函数实例的方式，可以确保我们的代码是在全局作用域下执行。</p>
 <p>依赖Function构造函数，我们可以实现自己的“<code class="highlighter-rouge">eval</code>”。这里我将实现的“<code class="highlighter-rouge">eval</code>”命名为<code class="highlighter-rouge">$eval</code>，以示区分。当然，$eval实现的功能和原生<code class="highlighter-rouge">eval</code>功能不尽相同。<code class="highlighter-rouge">$eval</code>可以让我们在指定作用域下执行代码。同时，这里还额外将<code class="highlighter-rouge">$eval</code>方法定义到<code class="highlighter-rouge">Object.prototype</code>中以适用不同场合。</p>
 <p>下面是$eval和Object.prototype.$eval的代码实现。</p>
