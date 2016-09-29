@@ -1,9 +1,145 @@
 ---
 layout: default
-title: my first post
-time: 20160929
+title: “eval” is not evil
+tags: [javascript]
 ---
 <h1>{{ page.title }}</h1>
-<h2>{{ site.time | date_to_long_string }}</h2>
-<p>This is my first post.Click the link below to go back to index:</p>
-<a href="{{ site.baseurl }}/index.html">Go back</a>
+<time>{{ site.time | date_to_long_string }}</time> 标签：{% for tag in page.tags %} <span> {{tag}} </span> {% endfor %}
+<p>一般我们代码几乎不会使用到eval, 但凡需要使用到<code class="highlighter-rouge">eval</code>的地方，都会代而使用构造器Function生成函数实例的方式，因为<code class="highlighter-rouge">eval is evil</code>。<code class="highlighter-rouge">eval</code>可以在全局作域下执行代码，也可以在局部作用域（间接调用<code class="highlighter-rouge">eval</code>）下执行代码。而使用构造器Function生成函数实例的方式，可以确保我们的代码是在全局作用域下执行。</p>
+<p>依赖Function构造函数，我们可以实现自己的“<code class="highlighter-rouge">eval</code>”。这里我将实现的“<code class="highlighter-rouge">eval</code>”命名为<code class="highlighter-rouge">$eval</code>，以示区分。当然，$eval实现的功能和原生<code class="highlighter-rouge">eval</code>功能不尽相同。<code class="highlighter-rouge">$eval</code>可以让我们在指定作用域下执行代码。同时，这里还额外将<code class="highlighter-rouge">$eval</code>方法定义到<code class="highlighter-rouge">Object.prototype</code>中以适用不同场合。</p>
+<p>下面是$eval和Object.prototype.$eval的代码实现。</p>
+<pre>
+void function (global) {
+  /**
+   * Execute javascript code within specific scope
+   * @param  {Function|String} fn Scoped function or expression
+   * @param  {Object} imports     An object which defines required local variables
+   * @return {Function}           Function that can be invoked to run code in specific scope
+   */
+  function scopedRunner(fn, imports) {
+    var rfunc = /^function\s+(?:[^(]*)\(([^)]*)\)\s*{([^]*)}$/;
+    var found = String(fn).match(rfunc) || [,,'return (' + fn + ');'];
+    var args = found[1] || '';
+    var stmt = found[2] || '';
+
+    var body = Object.keys(imports || {}).reduce(function (ret, key, idx) {
+      return ret + (idx ? ', ' : 'var ') + key + ' = $scope["' + key + '"]';
+    }, '') + '; return function (' + args + ') {' + stmt + '};';
+
+    return Function('$scope', body).call(null, imports);
+  }
+
+  // define `global.$eval`
+  Object.defineProperty(global, '$eval', {
+    value: function () {
+      return scopedRunner.apply(null, arguments)();
+    }
+  });
+
+  // define `Object.prototype.$eval`
+  Object.defineProperty(Object.prototype, '$eval', {
+    value: function (expr) {
+      return global.$eval(expr, this);
+    }
+  });
+}(function () { return this; }());
+</pre>
+<p>以下是一些关于$eval和Object.prototype.$eval的使用例子。</p>
+<ul>
+	<li>e.g 1</li>
+	<pre>
+// define some global variables
+x = 10;
+y = 30;
+
+void function () {
+  // define some local variables
+  var a = 6, b = 7;
+
+  $eval(function () {
+    // Uncaught ReferenceError: a is not defined
+    // console.log(a + b);
+  });
+
+  // Uncaught ReferenceError: a is not defined
+  // console.log($eval('a + b'));
+
+  console.log($eval('y / x')); //=> 3
+}();
+	</pre>
+	<li>e.g 2</li>
+	<pre>
+void function () {
+  var obj = { a: 6, b: 7 };
+  var result;
+
+  result = $eval(function () {
+    return a * b;
+  }, obj);
+  console.log(result); //=> 42
+
+  result = $eval('a * b', obj);
+  console.log(result); //=> 42
+
+  result = obj.$eval('a * b');
+  console.log(result); //=> 42
+}();
+	</pre>
+	<li>e.g 3</li>
+	<pre>
+void function () {
+  var raws = ['42', '"42"', 'a * b', '[a, b]', '{ x: a, y: b }'];
+  var out = raws.map(eval.$eval.bind({ a: 6, b: 7 }));
+
+  //=> [42, '42', 42, [6, 7], { x: 6, y: 7 }]
+  console.log(out);
+}();
+	</pre>
+	<li>e.g 4</li>
+	<pre>
+x = 10;
+y = 30;
+
+void function () {
+  var obj = {
+    x: 6,
+    y: 7,
+    times: function () {
+      return this.x * this.y;
+    },
+    sum: function (x, y) {
+      return x + y;
+    }
+  };
+
+  console.log(
+    $eval('$scope', obj) === obj,                        //=> true
+    $eval(function () { return $scope; }, obj) === obj,  //=> true
+    obj.$eval('$scope') === obj,                         //=> true
+    obj.$eval(function () { return $scope; }) === obj    //=> true
+  );
+
+  console.log(
+    obj.$eval('times()'),             //=> 300
+    obj.$eval('$scope.times()'),      //=> 42
+    obj.$eval('times.call($scope)')   //=> 42
+  );
+
+  obj.$eval(function () {
+    console.log(times());             //=> 300
+    console.log($scope.times());      //=> 42
+    console.log(times.call($scope));  //=> 42
+  });
+
+  console.log(
+    obj.$eval('sum(x,y)'),                          //=> 13
+    obj.$eval(function () { return sum(x, y); }),   //=> 13
+    $eval('sum(x,y)', obj),                         //=> 13
+    $eval(function () { return sum(x, y); }, obj)   //=> 13
+  );
+}();
+	</pre>
+</ul>
+<p>最后，$eval is not eval, $eval is not evil。</p>
+
+<a href="{{ site.baseurl }}/index.html">< 返回</a>
