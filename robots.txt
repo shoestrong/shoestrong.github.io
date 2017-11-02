@@ -1,8 +1,0 @@
-# robots.txt generated at http://tool.chinaz.com/robots/ 
-User-agent: *
-Disallow: 
-Disallow: /bin/
-Sitemap: http://shoestrong.cc/sitemap.html
-Sitemap: http://shoestrong.cc/sitemap.xml
-Sitemap: http://www.shoestrong.cc/sitemap.html
-Sitemap: http://www.shoestrong.cc/sitemap.xml
