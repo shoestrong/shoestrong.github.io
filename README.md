@@ -1,2 +1,2 @@
-# [shoestrong.cn](http://shoestrong.cn) 的主页
+# 主页
 
